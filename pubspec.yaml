@@ -1,0 +1,73 @@
+name: fyp2
+description: "A new Flutter project."
+publish_to: 'none' # Remove this line if you wish to publish to pub.dev
+
+version: 1.0.0+1
+
+environment:
+  sdk: ">=3.0.0 <4.0.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # Add the necessary dependencies
+  sleek_circular_slider: ^2.0.1
+  percent_indicator: ^4.2.4
+  cupertino_icons: ^1.0.8
+  firebase_core: ^3.10.0
+  cloud_firestore: ^5.6.1
+  firebase_auth: ^5.4.0
+  firebase_database: ^11.3.0
+  firebase_messaging: ^15.2.0
+  flutter_local_notifications: ^18.0.1
+  app_settings: ^5.1.1
+  intl: ^0.18.0
+  http: ^1.0.0  # Changed to match your version conflict requirement
+  provider: ^6.1.2  # Specified version
+  get_it: ^8.0.3  # Specified version
+  flutter_svg: ^2.0.16  # Specified version (instead of using "any")
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  font_awesome_flutter: ^10.8.0
+  image_picker: ^1.1.2
+  dotted_border: ^2.1.0
+  cached_network_image: ^3.4.1
+  flutter_lints: ^5.0.0
+
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/images/
+    - assets/icons/
+    - assets/fonts/
+    - assets/images/settings/
+    - assets/icons/svg/
+    - assets/icons/menu_icons/
+
+fonts:
+  - family: "Noto Sans"
+    fonts:
+      - asset: "assets/fonts/NotoSans-Bold.ttf"
+        style: "normal"
+      - asset: "assets/fonts/NotoSans-Regular.ttf"
+        style: "normal"
+  - family: "Poppins"
+    fonts:
+      - asset: "assets/fonts/Poppins-700.ttf"
+        style: "normal"
+        weight: 700
+  - family: ABeeZee
+    fonts:
+      - asset: assets/fonts/ABeeZee-Italic.ttf
+        style: italic
+      - asset: assets/fonts/ABeeZee-Regular.ttf
+        style: normal
+  - family: Lexend
+    fonts:
+      - asset: assets/fonts/Lexend-Medium.ttf
+        weight: 500
+      - asset: assets/fonts/Lexend-ExtraLight.ttf
+        weight: 200
