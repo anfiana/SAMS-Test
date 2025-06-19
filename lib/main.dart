@@ -4,13 +4,17 @@ import 'package:fyp2/navigation_service.dart';
 import 'package:fyp2/provider/getit.dart'; // Ensure this contains `setupLocator`
 import 'package:fyp2/routes/routes.dart';
 import 'package:fyp2/screens/splash_screen/splash_screen.dart';
-import 'package:fyp2/screens/pest_screen/pest_detec.dart'; // Import PestDetectionPage correctly
+import 'package:fyp2/screens/pest_screen/pest_detection_test.dart'; // Correct Import for PestDetectionPage
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp(); // Initialize Firebase
-  print("Firebase initialized successfully");
-  setupLocator(); // Initialize the NavigationService
+  try {
+    await Firebase.initializeApp();
+    print("Firebase initialized successfully");
+  } catch (e) {
+    print("Firebase initialization failed: $e");
+  }
+  setupLocator(); // This is required
   runApp(const MyApp());
 }
 

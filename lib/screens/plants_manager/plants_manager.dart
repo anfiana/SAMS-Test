@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import "package:fyp2/service/signUp/authentication.dart";
 
 class PlantsPage extends StatefulWidget {
   const PlantsPage({super.key});
@@ -32,6 +33,36 @@ class _PlantsPageState extends State<PlantsPage> {
     }
   }
 
+  Future<String?> getPumpValue(String userId, String plantId) async {
+  try {
+    var docSnapshot = await FirebaseFirestore.instance
+        .collection('users')
+        .doc(userId)
+        .collection('plants')
+        .doc(plantId)
+        .get();
+
+    if (docSnapshot.exists) {
+      var data = docSnapshot.data();
+      if (data != null && data.containsKey('pump')) {
+        return data['pump'] as String;
+      } else {
+        print('Pump field not found');
+        return null;
+      }
+    } else {
+      print('Document does not exist');
+      return null;
+    }
+  } catch (e) {
+    print('Error fetching data: $e');
+    return null;
+  }
+}
+
+
+
+/*
   // Show information dialog
   void showBookInfo() {
     showDialog(
@@ -63,6 +94,8 @@ class _PlantsPageState extends State<PlantsPage> {
       },
     );
   }
+*/
+
 
   // Check if a new plant can be added
   Future<bool> _canAddPlant() async {
@@ -182,6 +215,8 @@ class _PlantsPageState extends State<PlantsPage> {
                   final user = FirebaseAuth.instance.currentUser;
                   if (user != null) {
                     try {
+                      
+                      
                       await FirebaseFirestore.instance
                           .collection('users')
                           .doc(user.uid)
@@ -194,9 +229,16 @@ class _PlantsPageState extends State<PlantsPage> {
                       Navigator.of(context).pop();
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
-                          content: Text('${nameController.text.trim()} assigned to $pump.'),
+                          backgroundColor: Colors.green,  // Sets background color to green
+                          content: Text(
+                            '${nameController.text.trim()} assigned to $pump.',
+                            style: const TextStyle(color: Colors.white),  // Sets the text color to white
+                          ),
                         ),
                       );
+
+                      //print(pump);
+                      AuthMethod().sendMoistureToRaspberryPi(int.parse(moistureController.text.trim()),pump);
                     } catch (e) {
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(content: Text('Error adding plant: $e')),
@@ -225,7 +267,13 @@ class _PlantsPageState extends State<PlantsPage> {
             .doc(plantId)
             .delete();
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Plant deleted successfully.')),
+          const SnackBar(
+            backgroundColor: Colors.green,
+            content: Text(
+              'Plant deleted successfully.',
+              style: const TextStyle(color: Colors.white),
+              )
+            ),
         );
       } catch (e) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -279,6 +327,7 @@ class _PlantsPageState extends State<PlantsPage> {
                   final newMoisture = int.tryParse(moistureController.text.trim());
                   if (newMoisture != null) {
                     try {
+                      
                       final user = FirebaseAuth.instance.currentUser;
                       if (user != null) {
                         await FirebaseFirestore.instance
@@ -290,6 +339,11 @@ class _PlantsPageState extends State<PlantsPage> {
                         ScaffoldMessenger.of(context).showSnackBar(
                           const SnackBar(content: Text('Moisture updated.')),
                         );
+                        String pumppppp = (await getPumpValue(user.uid,plantId))!;
+                        AuthMethod().sendMoistureToRaspberryPi(newMoisture,pumppppp);
+                        //print(pumppppp);
+                        //print("PUMP DI ATAS\n\n\n\n\n\n\n\n\n\n");
+                        
                       }
                       Navigator.of(context).pop();
                     } catch (e) {
@@ -316,7 +370,7 @@ class _PlantsPageState extends State<PlantsPage> {
         backgroundColor: const Color(0xFF1A5319), // Set background to green
         appBar: AppBar(
           title: const Text(
-            'Plant Moisture',
+            'Plants Moisture',
             style: TextStyle(
               fontSize: 24,
               fontWeight: FontWeight.bold,
@@ -325,6 +379,7 @@ class _PlantsPageState extends State<PlantsPage> {
           ),
           centerTitle: true,
           backgroundColor: const Color(0xFF1A5319), // AppBar matches background
+          iconTheme: const IconThemeData(color: Colors.white),
           actions: [
             IconButton(
               icon: const Icon(Icons.add),
@@ -343,19 +398,22 @@ class _PlantsPageState extends State<PlantsPage> {
             style: TextStyle(color: Colors.white, fontSize: 18),
           ),
         ),
+
+
+/*
         floatingActionButton: FloatingActionButton(
           onPressed: showBookInfo,
           backgroundColor: const Color.fromARGB(255, 255, 255, 255),
           child: const Icon(Icons.book, color: Color.fromARGB(255, 93, 93, 93)),
         ),
+*/
       );
     }
-
     return Scaffold(
       backgroundColor: const Color(0xFF1A5319), // Set background to green
       appBar: AppBar(
         title: const Text(
-          'Plant Moisture',
+          'Plants Moisture',
           style: TextStyle(
             fontSize: 24,
             fontWeight: FontWeight.bold,
@@ -364,6 +422,7 @@ class _PlantsPageState extends State<PlantsPage> {
         ),
         centerTitle: true,
         backgroundColor: const Color(0xFF1A5319), // AppBar matches background
+          iconTheme: const IconThemeData(color: Colors.white),
         actions: [
           IconButton(
             icon: const Icon(Icons.add),
@@ -501,11 +560,15 @@ class _PlantsPageState extends State<PlantsPage> {
           );
         },
       ),
+
+/*
       floatingActionButton: FloatingActionButton(
         onPressed: showBookInfo,
         backgroundColor: const Color.fromARGB(255, 255, 255, 255),
         child: const Icon(Icons.book, color: Color.fromARGB(255, 93, 93, 93)),
       ),
+*/
+
     );
   }
 }

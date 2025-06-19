@@ -14,6 +14,7 @@ class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
 
   // Function to fetch display name
+  
   Future<String> _fetchDisplayName() async {
     try {
       User? user = FirebaseAuth.instance.currentUser;
@@ -46,7 +47,7 @@ class HomeScreen extends StatelessWidget {
           length: 3,
           child: Scaffold(
             appBar: AppBar(
-              toolbarHeight: getProportionateScreenHeight(60),
+              toolbarHeight: getProportionateScreenHeight(100), //60
               elevation: 0,
               iconTheme: const IconThemeData(
                   color: Color.fromARGB(255, 255, 255, 255)),

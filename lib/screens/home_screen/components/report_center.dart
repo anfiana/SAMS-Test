@@ -129,6 +129,7 @@ class _ReportCenterState extends State<ReportCenter> {
         centerTitle: true,
         backgroundColor: const Color(0xFF1A5319),
         elevation: 0, // Remove AppBar shadow
+        iconTheme: const IconThemeData(color: Colors.white),
       ),
       backgroundColor: const Color(0xFF1A5319),
       body: SingleChildScrollView(

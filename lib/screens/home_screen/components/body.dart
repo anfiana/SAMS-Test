@@ -130,7 +130,8 @@ class _BodyState extends State<Body> {
                 MaterialPageRoute(builder: (context) => const PlantsPage()),
               ),
             ),
-            _buildDarkContainerRow(),
+            //_buildDarkContainerRow(),
+            SizedBox(height: getProportionateScreenHeight(10)),
           ],
         ),
       ),
@@ -165,7 +166,7 @@ class _BodyState extends State<Body> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Moisture #1',
+            'Moisture Sensor 1',
             style: Theme.of(context).textTheme.bodyLarge,
           ),
           LinearPercentIndicator(
@@ -186,7 +187,7 @@ class _BodyState extends State<Body> {
           ),
           SizedBox(height: getProportionateScreenHeight(10)),
           Text(
-            'Moisture #2',
+            'Moisture Sensor 2',
             style: Theme.of(context).textTheme.bodyLarge,
           ),
           LinearPercentIndicator(
@@ -295,49 +296,10 @@ class _BodyState extends State<Body> {
       ),
     );
   }
-
-  Widget _buildDarkContainerRow() {
-    return Row(
-      children: [
-        Expanded(
-          child: Padding(
-            padding: EdgeInsets.all(getProportionateScreenHeight(5)),
-            child: DarkContainer(
-              itsOn: widget.model.isFanON,
-              switchButton: widget.model.fanSwitch,
-              onTap: () {},
-              iconAsset: 'assets/icons/svg/water.svg',
-              device: 'Water Pump 1',
-              deviceCount: '',
-              switchFav: widget.model.fanFav,
-              isFav: widget.model.isFanFav,
-            ),
-          ),
-        ),
-        Expanded(
-          child: Padding(
-            padding: EdgeInsets.all(getProportionateScreenHeight(5)),
-            child: DarkContainer(
-              itsOn: widget.model.isACON,
-              switchButton: widget.model.acSwitch,
-              onTap: () {},
-              iconAsset: 'assets/icons/svg/water.svg',
-              device: 'Water Pump 2',
-              deviceCount: '',
-              switchFav: widget.model.acFav,
-              isFav: widget.model.isACFav,
-            ),
-          ),
-        ),
-      ],
-    );
-  }
 }
 
 
 
-//PEST CHECK
-// Add the missing PestDetectionPage widget definition here
 class PestDetectionPage extends StatefulWidget {
   const PestDetectionPage({super.key});
 
@@ -346,8 +308,13 @@ class PestDetectionPage extends StatefulWidget {
 }
 
 class PestDetectionPageState extends State<PestDetectionPage> {
-  final DatabaseReference _databaseReference =
-      FirebaseDatabase.instance.ref().child('predictions');
+  // Make sure Firebase is already initialized in main() before creating this widget
+  final FirebaseDatabase database = FirebaseDatabase.instanceFor(
+    app: Firebase.app(),
+    databaseURL: "https://fyp2-test1-default-rtdb.asia-southeast1.firebasedatabase.app/",
+  );
+
+  DatabaseReference? _databaseReference;
 
   List<Map<String, dynamic>> pestRecords = [];
   bool isLoading = true;
@@ -355,31 +322,165 @@ class PestDetectionPageState extends State<PestDetectionPage> {
   @override
   void initState() {
     super.initState();
-    _fetchDataManually(); // Manual fetch for debugging
-    //_fetchDataFromFirebase(); // Real-time listener
+
+    // Reference to your "predictions" node
+    _databaseReference = database.ref().child('predictions');
+    print("TEST...");
+
+    // Now that it's set, you can call your fetch methods
+    _fetchDataManually();
+    // If you want real-time updates, use: _fetchDataFromFirebase();
   }
 
-  // Function to manually fetch data for debugging
-  void _fetchDataManually() async {
+  // Function to manually fetch data for debugging & display
+  Future<void> _fetchDataManually() async {
     try {
       print("Fetching data manually...");
-      final snapshot = await _databaseReference.get();
-      if (snapshot.exists) {
-        print("Manual fetch result: ${snapshot.value}");
-      } else {
+      if (_databaseReference == null) {
+        print("Error: _databaseReference is null!");
+        return;
+      }
+
+      final snapshot = await _databaseReference!.get();
+      if (!snapshot.exists) {
         print("No data available in the database.");
+        setState(() {
+          pestRecords = [];
+          isLoading = false;
+        });
+        return;
+      }
+
+      // We have snapshot data—let's parse it
+      final snapshotValue = snapshot.value;
+      print("Manual fetch result: $snapshotValue");
+
+      if (snapshotValue is Map) {
+        // Convert dynamic Map to a Map<String, dynamic>
+        final data = Map<String, dynamic>.from(snapshotValue);
+        List<Map<String, dynamic>> records = [];
+
+        data.forEach((key, value) {
+          print("Processing key: $key");
+          if (value is Map) {
+            // For each child, get 'detections'
+            final detections = List<dynamic>.from(value['detections'] ?? []);
+            print("Detections for key $key: $detections");
+
+            // Each detection is also a map
+            for (var detection in detections) {
+              if (detection is Map) {
+                records.add({
+                  'class': detection['class'] ?? 'Unknown',
+                  'probability': detection['probability'] ?? 0.0,
+                  'timestamp': value['timestamp'] ?? 'Unknown',
+                });
+              }
+            }
+          } else {
+            print("Value for key $key is not a valid Map");
+          }
+        });
+
+
+
+         // Sort records by timestamp DESC (newest first)
+        records.sort((a, b) {
+          final dateA = DateTime.tryParse(a['timestamp'] ?? '') ??
+              DateTime.fromMillisecondsSinceEpoch(0);
+          final dateB = DateTime.tryParse(b['timestamp'] ?? '') ??
+              DateTime.fromMillisecondsSinceEpoch(0);
+          return dateB.compareTo(dateA); // descending
+        });
+
+
+/*
+        // Group records by date (e.g., "2025-01-22")
+      Map<String, List<Map<String, dynamic>>> groupedRecords = {};
+      for (var record in records) {
+        final timestamp = DateTime.tryParse(record['timestamp'] ?? '');
+        if (timestamp != null) {
+          final dateKey = '${timestamp.year}-${timestamp.month.toString().padLeft(2, '0')}-${timestamp.day.toString().padLeft(2, '0')}';
+          if (!groupedRecords.containsKey(dateKey)) {
+            groupedRecords[dateKey] = [];
+        
+          }
+          
+          groupedRecords[dateKey]!.add(record);
+        }
+      }
+
+
+
+      // Sort by most recent date
+      List<String> sortedDates = groupedRecords.keys.toList();
+      sortedDates.sort((a, b) {
+        final dateA = DateTime.parse(a);
+        final dateB = DateTime.parse(b);
+        return dateB.compareTo(dateA); // descending
+      });
+*/
+
+
+
+
+      // 1) Choose your target date — for example, today's date
+      DateTime today = DateTime.now();
+      // Convert 'today' to a date string like '2025-01-22' or a DateTime “truncated” to day
+      final String todayKey = '${today.year}-${today.month.toString().padLeft(2, '0')}-${today.day.toString().padLeft(2, '0')}';
+
+      // 2) Filter out records that don't match that date
+      records = records.where((record) {
+        final timestamp = DateTime.tryParse(record['timestamp'] ?? '');
+        if (timestamp == null) return false;
+
+        final recordKey = '${timestamp.year}-${timestamp.month.toString().padLeft(2, '0')}-${timestamp.day.toString().padLeft(2, '0')}';
+        return recordKey == todayKey;
+      }).toList();
+
+
+      /*
+        // Limit to latest 10 records
+        if (records.length > 10) {
+          records = records.sublist(0, 10);
+        }
+      */
+        
+
+        
+
+
+        setState(() {
+          pestRecords = records;
+          isLoading = false;
+        });
+        print("Final processed pest records: $pestRecords");
+      } else {
+        print("Snapshot value is not a valid Map");
+        setState(() {
+          pestRecords = [];
+          isLoading = false;
+        });
       }
     } catch (e) {
       print("Error during manual fetch: $e");
+      setState(() {
+        pestRecords = [];
+        isLoading = false;
+      });
     }
   }
 
-  // Function to fetch and process data from Firebase in real-time
+  // Example of real-time fetching (if you prefer using it):
   void _fetchDataFromFirebase() {
-    print("Listening for real-time updates...");
-    _databaseReference.onValue.listen((event) {
-      print("Firebase onValue triggered");
+    if (_databaseReference == null) {
+      print("Error: _databaseReference is null!");
+      return;
+    }
 
+    print("Listening for real-time updates...");
+    _databaseReference!.onValue.listen((event) {
+      print("Firebase onValue triggered");
       final snapshotValue = event.snapshot.value;
 
       if (snapshotValue == null) {
@@ -393,12 +494,13 @@ class PestDetectionPageState extends State<PestDetectionPage> {
 
       try {
         print("Raw snapshot value: $snapshotValue");
-        final data = Map<String, dynamic>.from(snapshotValue as Map<dynamic, dynamic>);
+        final data = Map<String, dynamic>.from(
+          snapshotValue as Map<dynamic, dynamic>,
+        );
         print("Parsed data from Firebase: $data");
 
         List<Map<String, dynamic>> records = [];
 
-        // Iterate through each entry in the "predictions" node
         data.forEach((key, value) {
           print("Processing key: $key");
           if (value is Map<dynamic, dynamic>) {
@@ -407,7 +509,6 @@ class PestDetectionPageState extends State<PestDetectionPage> {
 
             for (var detection in detections) {
               if (detection is Map<dynamic, dynamic>) {
-                print("Processing detection: $detection");
                 records.add({
                   'class': detection['class'] ?? 'Unknown',
                   'probability': detection['probability'] ?? 0.0,
@@ -443,8 +544,18 @@ class PestDetectionPageState extends State<PestDetectionPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Pest Detection'),
-      ),
+          title: const Text(
+          'Pest Detection',
+            style: TextStyle(
+              fontSize: 24,
+              fontWeight: FontWeight.bold,
+              color: Colors.white, 
+    ),
+  ),
+  centerTitle: true,
+  backgroundColor: const Color(0xFF1A5319), // Matches the background color
+  iconTheme: const IconThemeData(color: Colors.white), // Ensures back icon is white
+),
       body: isLoading
           ? const Center(child: CircularProgressIndicator())
           : pestRecords.isEmpty
@@ -454,12 +565,16 @@ class PestDetectionPageState extends State<PestDetectionPage> {
                   itemBuilder: (context, index) {
                     final record = pestRecords[index];
                     return Card(
+                      color: Colors.white,
                       margin: const EdgeInsets.symmetric(
-                          vertical: 8.0, horizontal: 16.0),
+                        vertical: 8.0,
+                        horizontal: 16.0,
+                      ),
                       child: ListTile(
                         title: Text('Pest: ${record['class']}'),
                         subtitle: Text(
-                          'Probability: ${(record['probability'] * 100).toStringAsFixed(2)}%\n'
+                          'Probability: '
+                          '${(record['probability'] * 100).toStringAsFixed(2)}%\n'
                           'Timestamp: ${record['timestamp']}',
                         ),
                       ),

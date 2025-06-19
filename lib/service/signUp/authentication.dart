@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart' hide Query;
 import 'package:firebase_auth/firebase_auth.dart' ;
 import 'package:firebase_database/firebase_database.dart';  // Import Realtime Database
 import 'package:firebase_core/firebase_core.dart' ;
+import 'package:http/http.dart' as http;
 
 
 class AuthMethod {
@@ -41,13 +42,15 @@ class AuthMethod {
           return "Username is already taken. Please choose another one.";
         }
 
+        
+
         // Register user in Firebase Auth
         UserCredential cred = await _auth.createUserWithEmailAndPassword(
           email: email,
           password: password,
         );
 
-        // Add user to Firestore
+        // Add user to Firestore  //TANDAIN AKU UBAH NAME DISINI DALAM DOC HARUSNYA (cred.user!.uid)
         await _firestore.collection("users").doc(cred.user!.uid).set({
           'name': name,
           'uid': cred.user!.uid,
@@ -142,6 +145,113 @@ class AuthMethod {
   }
 }
 
+
+/*Future<String> updatePumpSettings({
+    required String userId,
+    required String pump,
+    required int moisture,
+  }) async {
+    try {
+      await _firestore
+          .collection('users')
+          .doc(userId)
+          .collection('plants')
+          .doc(pump)
+          .update({
+        'moisture': moisture,
+      });
+
+      return "success";
+    } catch (e) {
+      return e.toString();
+    }
+  }
+
+*/
+
+
+//TRY CONNECTIG TO RASBERY PY
+/*Future<int> getMoistureSetting({
+    required String userId,
+    required String pump,
+  }) async {
+    try {
+      // Get the document for the specific pump
+      var docSnapshot = await _firestore
+          .collection('users')
+          .doc(userId)
+          .collection('plants')
+          .doc(pump)
+          .get();
+
+      if (docSnapshot.exists) {
+        // Extract moisture value from the document
+        int moisture = docSnapshot.data()?['moisture'] ?? 0;  // Default to 0 if not found
+        return moisture;
+      } else {
+        throw Exception("Document does not exist");
+      }
+    } catch (e) {
+      print("Error getting moisture value: $e");
+      rethrow; // Or handle the error in some way
+    }
+  }
+  */
+
+  Future<int> getMoistureSetting({
+    required String userId,
+    required String pump,
+  }) async {
+    try {
+      // Get the document for the specific pump
+      var docSnapshot = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(userId)
+          .collection('plants')
+          .doc(pump)
+          .get();
+
+      if (docSnapshot.exists) {
+        // Extract moisture value from the document
+        int moisture = docSnapshot.data()?['moisture'] ?? 0;  // Default to 0 if not found
+        return moisture;
+      } else {
+        throw Exception("Document does not exist");
+      }
+    } catch (e) {
+      print("Error getting moisture value: $e");
+      rethrow;
+    }
+  }
+
+Future<void> sendMoistureToRaspberryPi(int moisture, String pump) async {
+  try {
+    // Define the URL of the Raspberry Pi endpoint
+    final url = Uri.parse('http://172.16.137.227:5000/update_moisture');
+
+    // Send an HTTP POST request with the moisture and pump data
+    final response = await http.post(
+      url,
+      body: {
+        'moisture': moisture.toString(),
+        'pump': pump,
+      },
+    );
+
+    if (response.statusCode == 200) {
+      print("Successfully sent moisture and pump data to Raspberry Pi");
+    } else {
+      print("Failed to send data. Status code: \${response.statusCode}");
+    }
+  } catch (e) {
+    print("Error sending data to Raspberry Pi: \$e");
+  }
+}
+
+
+
+
+
 Future<Map<String, dynamic>?> getLatestSensorData() async {
   // Define the constant parent path
   const String parentPath = "/sensor_data";
@@ -181,3 +291,4 @@ Future<Map<String, dynamic>?> getLatestSensorData() async {
   return null; // Return null if no data is found or there's an error
 }
 }
+
